@@ -188,7 +188,11 @@ for scannedparam_currentval in scannedparam_vals:
 
     ## Generate a descriptive name for the script to be written
     if scannedparam_currentval is not None:
-        barename, ext = rystiatrc['scriptname'].rsplit('.')
+        try:
+            barename, ext = rystiatrc['scriptname'].rsplit('.')
+        except ValueError:
+            barename, ext = rystiatrc['scriptname'], ''
+
         try:        ## FIXMe
             newscriptname = os.path.join(batchdir, '{:}__{:}={:.6g}.{:}'.format(barename, scannedparam_name, scannedparam_currentval, ext))
         except ValueError:
@@ -208,7 +212,7 @@ for scannedparam_currentval in scannedparam_vals:
                     print(CW+'warning: could not format parameter value as a number'+C0)
                     l = '{:}{:}={:}\n'.format(rystiatrc['varprefix'], scannedparam_name, scannedparam_currentval)
             for k,v in staticparam.items():
-                if rystiatrc['varprefix']+k+'=' in l.replace(' ', ''):  # (todo) should better search for whole word
+                if rystiatrc['varprefix']+k+'=' in l.replace('\t', '').replace(' ', ''):  # (todo) should better search for whole word
                     unused_staticparam.remove(k)
                     l = '{:}{:}={:}\n'.format(rystiatrc['varprefix'], k, v)
                     break
@@ -216,12 +220,8 @@ for scannedparam_currentval in scannedparam_vals:
 
     ## Check if all user-given parameters were used
     if unused_staticparam:
-        if len(unused_staticparam)>1:
-            print(CR+'rystiat error:'+CW+' The static parameters {:}{:} were not found to be defined anywhere in the source file {:}'.format(
-                rystiatrc['varprefix'], unused_staticparam, rystiatrc['scriptname'])+C0)
-        else:
-            print(CR+'rystiat error:'+CW+' The static parameter {:}{:} was not found to be defined anywhere in the source file {:}'.format(
-                rystiatrc['varprefix'], unused_staticparam, rystiatrc['scriptname'])+C0)
+        print(CR+'rystiat error:'+CW+' Could not find definition of static parameter(s) {:}{:} in the source file {:}'.format(
+            rystiatrc['varprefix'], unused_staticparam, rystiatrc['scriptname'])+C0)
         break
     if unused_scannedparam and scannedparam_currentval is not None:
         print(CR+'rystiat error:'+CW+' The parameter to be scanned {:}{:} was not found to be defined anywhere in the source file {:}'.format(
