@@ -131,7 +131,7 @@ for arg in sys.argv[1:]:
         staticparam[argname] = argval[0]
 
 ## Generate new directory and backup the original script there
-simulationid = '{:03d}-{:.40}'.format(counter, os.path.split(rystiatrc['scriptname'])[1])
+simulationid = '{:03d}__{:.40}'.format(counter, os.path.split(rystiatrc['scriptname'])[1])
 for k,v in staticparam.items(): 
     try:
         simulationid += '__{:}={:.6g}'.format(k,v)
@@ -198,7 +198,7 @@ for scannedparam_currentval in scannedparam_vals:
     ## Parse and write the new updated script 
     with open(newscriptname, 'w') as outputfile:
         for l in inputlines:
-            if scannedparam_name and scannedparam_name+'=' in l.replace(' ', ''):  ## FIXME trouble with 'GaN' matching 'InGaN' etc., use RE?
+            if scannedparam_name and rystiatrc['varprefix']+scannedparam_name+'=' in l.replace(' ', ''):  # (todo) should better search for whole word
                 unused_scannedparam = False
                 try: 
                     l = '{:}{:}={:.6g}\n'.format(rystiatrc['varprefix'], scannedparam_name, scannedparam_currentval)
@@ -208,7 +208,7 @@ for scannedparam_currentval in scannedparam_vals:
                     print(CW+'warning: could not format parameter value as a number'+C0)
                     l = '{:}{:}={:}\n'.format(rystiatrc['varprefix'], scannedparam_name, scannedparam_currentval)
             for k,v in staticparam.items():
-                if k+'=' in l.replace(' ', ''): 
+                if rystiatrc['varprefix']+k+'=' in l.replace(' ', ''):  # (todo) should better search for whole word
                     unused_staticparam.remove(k)
                     l = '{:}{:}={:}\n'.format(rystiatrc['varprefix'], k, v)
                     break
