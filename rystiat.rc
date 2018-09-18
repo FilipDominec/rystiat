@@ -1,0 +1,17 @@
+## Definition of how to run simulation batches for rystiat.py, or, "Run Your Simulations To Investigate A Trend"
+## This file is searched for in the directory tree; put it to the uppermost directory of your simulation project 
+## where it would be valid. The paths are relative to the working directory from which you run rystiat. 
+## We suggest not to put any simulation-related parameters here: pass them as arguments when calling rystiat.py. 
+##                                                                                          (c) Filip Dominec 2018
+
+preprocess  = 
+
+interpreter = /home/dominecf/bin/nextnano/2017_01_19/nextnano3/gfortran 64bit/nextnano3.exe
+separator   = -inputfile
+scriptname  = 1D_simple_GaAs_QW.in
+scriptext   = .in
+staticparams = 
+# staticparams = -log  TODO FIXME wHERE DOES IT PUT THE LOG?
+
+postprocess = 
+
