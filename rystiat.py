@@ -100,13 +100,13 @@ for arg in sys.argv[1:]:
     argval = parse_param(argvalraw)
     if len(argval) > 1:
         if not scannedparam_name:
-            scannedparam_name, scannedparam_vals = argname.lower(), argval
+            scannedparam_name, scannedparam_vals = argname, argval
         else:
             print(CW+'rystiat warning: Already set up a 1-D scan over the `{:}` parameter, cannot run a 2-D scan also over `{:}`'.format(scannedparam_name, argname)+C0)
             print(CW+'               I will thus set {:}={:.6} as a static parameter.'.format(argname, argval[0])+C0)
-            staticparam[argname.lower()] = argval[0]
+            staticparam[argname] = argval[0]
     else:
-        staticparam[argname.lower()] = argval[0]
+        staticparam[argname] = argval[0]
 
 ## Generate new directory and backup the original script there
 simulationid = '{:03d}-{:.40}'.format(counter, os.path.split(rystiatrc['scriptname'])[1])
