@@ -126,65 +126,72 @@ shutil.copy(rystiatrc['scriptname'],
 if not scannedparam_vals: scannedparam_vals = [None]
 
 ## Main loop - for each scanned parameter generate a new script with updated parameters 
-with open(rystiatrc['scriptname'], 'r') as inputfile:
-    inputlines = inputfile.readlines()
-    for scannedparam_currentval in scannedparam_vals:
-        unused_staticparam = list(staticparam.keys())
-        unused_scannedparam = True
+try:
+    with open(rystiatrc['scriptname'], 'r', encoding='utf-8') as inputfile: 
+        inputlines = inputfile.readlines()
+except UnicodeDecodeError:      # one can never 100% determine encoding, but this often helps 
+    with open(rystiatrc['scriptname'], 'r', encoding='cp1252') as inputfile: 
+        inputlines = inputfile.readlines()
 
-        ## Generate a descriptive name for the script to be written
-        if scannedparam_currentval:
-            try:
-                newscriptname = os.path.join(batchdir, '{:}__{:}={:.6g}{:}'.format(
-                        rystiatrc['scriptname'].replace(rystiatrc['scriptext'],''), 
-                        scannedparam_name, scannedparam_currentval, rystiatrc['scriptext'])) ## FIXME
-            except:
-                print(CW+'rystiat warning: could not format scanning parameter `{:}` value as a number, assuming it is a text parameter'.format(
-                        scannedparam_name)+C0)
-                newscriptname = os.path.join(batchdir, '{:}__{:}={:}'.format(
-                        rystiatrc['scriptname'], scannedparam_name, scannedparam_currentval)) ## FIXME
-        else: newscriptname = os.path.join(batchdir, rystiatrc['scriptname'])
 
-        ## Parse and write the new updated script 
-        with open(newscriptname, 'w') as outputfile:
-            for l in inputlines:
-                if scannedparam_name and scannedparam_name+'=' in l.replace(' ', ''):  
-                    unused_scannedparam = False
-                    try: 
-                        l = '{:}={:.6g}\n'.format(scannedparam_name,scannedparam_currentval)
-                    except:
-                        print(CW+'warning: could not format parameter value as a number'+C0)
-                        l = '{:}={:}\n'.format(scannedparam_name,scannedparam_currentval)
-                for k,v in staticparam.items():
-                    if k+'=' in l.replace(' ', ''): 
-                        unused_staticparam.remove(k)
-                        l = '{:}={:}\n'.format(k,v)
-                        break
-                outputfile.write(l)
 
-        ## Check if all user-given parameters were used
-        if unused_staticparam:
-            if len(unused_staticparam)>1:
-                print(CR+'rystiat error:'+CW+'the static parameters {:} were not found to be defined anywhere in the source file {:}'.format(
-                    unused_staticparam, rystiatrc['scriptname'])+C0)
-            else:
-                print(CR+'rystiat error:'+CW+'the static parameter {:} was not found to be defined anywhere in the source file {:}'.format(
-                    unused_staticparam, rystiatrc['scriptname'])+C0)
-            break
-        if unused_scannedparam and scannedparam_currentval is not None:
-            print(CR+'rystiat error:'+CW+'the parameter to be scanned {:} was not found to be defined anywhere in the source file {:}'.format(
-                unused_scannedparam, rystiatrc['scriptname'])+C0)
-            break
+for scannedparam_currentval in scannedparam_vals:
+    unused_staticparam = list(staticparam.keys())
+    unused_scannedparam = True
 
-        ## Run the simulation!
+    ## Generate a descriptive name for the script to be written
+    if scannedparam_currentval:
+        try:
+            newscriptname = os.path.join(batchdir, '{:}__{:}={:.6g}{:}'.format(
+                    rystiatrc['scriptname'].replace(rystiatrc['scriptext'],''), 
+                    scannedparam_name, scannedparam_currentval, rystiatrc['scriptext'])) ## FIXME
+        except:
+            print(CW+'rystiat warning: could not format scanning parameter `{:}` value as a number, assuming it is a text parameter'.format(
+                    scannedparam_name)+C0)
+            newscriptname = os.path.join(batchdir, '{:}__{:}={:}'.format(
+                    rystiatrc['scriptname'], scannedparam_name, scannedparam_currentval)) ## FIXME
+    else: newscriptname = os.path.join(batchdir, rystiatrc['scriptname'])
 
-        #from datetime import datetime;  ''.format(datetime.datetime())
-        my_env = os.environ.copy()
-        my_env['NEXTNANO'] = '/home/dominecf/bin/nextnano/2017_01_19/'
-        print(CW+'rystiat info: it is {:}, running the next simulation with output:'.format(datetime.datetime.now())+C0)
-        callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
-                cwd=os.path.split(newscriptname)[0], env=my_env)
-        print(callresult.replace(b'\n',b'\n'))
+    ## Parse and write the new updated script 
+    with open(newscriptname, 'w') as outputfile:
+        for l in inputlines:
+            if scannedparam_name and scannedparam_name+'=' in l.replace(' ', ''):  
+                unused_scannedparam = False
+                try: 
+                    l = '{:}={:.6g}\n'.format(scannedparam_name,scannedparam_currentval)
+                except:
+                    print(CW+'warning: could not format parameter value as a number'+C0)
+                    l = '{:}={:}\n'.format(scannedparam_name,scannedparam_currentval)
+            for k,v in staticparam.items():
+                if k+'=' in l.replace(' ', ''): 
+                    unused_staticparam.remove(k)
+                    l = '{:}={:}\n'.format(k,v)
+                    break
+            outputfile.write(l)
+
+    ## Check if all user-given parameters were used
+    if unused_staticparam:
+        if len(unused_staticparam)>1:
+            print(CR+'rystiat error:'+CW+'the static parameters {:} were not found to be defined anywhere in the source file {:}'.format(
+                unused_staticparam, rystiatrc['scriptname'])+C0)
+        else:
+            print(CR+'rystiat error:'+CW+'the static parameter {:} was not found to be defined anywhere in the source file {:}'.format(
+                unused_staticparam, rystiatrc['scriptname'])+C0)
+        break
+    if unused_scannedparam and scannedparam_currentval is not None:
+        print(CR+'rystiat error:'+CW+'the parameter to be scanned {:} was not found to be defined anywhere in the source file {:}'.format(
+            unused_scannedparam, rystiatrc['scriptname'])+C0)
+        break
+
+    ## Run the simulation!
+
+    #from datetime import datetime;  ''.format(datetime.datetime())
+    my_env = os.environ.copy()
+    my_env['NEXTNANO'] = '/home/dominecf/bin/nextnano/2017_01_19/'
+    print(CW+'rystiat info: it is {:}, running the next simulation with output:'.format(datetime.datetime.now())+C0)
+    callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
+            cwd=os.path.split(newscriptname)[0], env=my_env)
+    print(callresult.replace(b'\n',b'\n'))
 
 newdirparam = ''
 newdirscan = ''
