@@ -1,8 +1,10 @@
 # RYSTIAT - Run Your Simulations To Investigate A Trend
 
+
 *"The purpose of computing is insight, not numbers" -- Richard Hamming (1915-1998)*
 
-This program does not compute anything. It only runs a batch of simulations, defined by the path of the interpreter and the control script. 
+This program does not compute anything. It only launches a batch of simulations, defined by the path of the interpreter and the control script. 
+
 
 ## Installation
 
@@ -29,4 +31,14 @@ simulation directories will be generated:
     yourscript__height=234.56__width=-5e5__depth=20
     yourscript__height=234.56__width=-5e5__depth=25
 
-Any processing of the simulation data is up to you; you can do this in the postprocessing script.
+Every directory will be accompanied with a similarly named script file, where rystiat changes the 
+definition of parameters given on the command line. One of these parameters may have the syntax
+like
+
+    depth=FROM..TO..STEP
+
+which determines the parametric scan as illustrated above. 
+
+Any processing of the simulation data is up to you; you can do this in the postprocessing script. You may find useful to run [plotcommander](https://github.com/FilipDominec/plotcommander) to compare the results. 
+
+
