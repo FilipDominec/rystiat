@@ -127,13 +127,32 @@ if not scannedparam_vals: scannedparam_vals = [None]
 
 ## Main loop - for each scanned parameter generate a new script with updated parameters 
 try:
-    with open(rystiatrc['scriptname'], 'r', encoding='utf-8') as inputfile: 
+    enc = 'utf-8'
+    with open(rystiatrc['scriptname'], 'r', encoding=enc) as inputfile: 
         inputlines = inputfile.readlines()
 except UnicodeDecodeError:      # one can never 100% determine encoding, but this often helps 
-    with open(rystiatrc['scriptname'], 'r', encoding='cp1252') as inputfile: 
+    enc = 'cp1252'
+    with open(rystiatrc['scriptname'], 'r', encoding=enc) as inputfile: 
         inputlines = inputfile.readlines()
 
-
+def highlight(s, keyws):
+    for keyw in keyws:
+        s = s.replace(keyw, CR+keyw+C0)
+        s = s.replace(keyw.lower(), CR+keyw.lower()+C0)
+        s = s.replace(keyw.upper(), CR+keyw.upper()+C0)
+    return s
+def run_command(command_list, **params):
+    process = subprocess.Popen(command_list, **params, stdout=subprocess.PIPE)
+    linenumber = 0
+    while True:
+        output = process.stdout.readline()
+        if output == b'' and process.poll() is not None:
+            break
+        if output:
+            print('{:}{:04}:{:} {:}'.format(CB, linenumber, C0, highlight(output.decode(enc).strip(), ('Error', 'Warning', 'Failed'))))
+        linenumber += 1
+    rc = process.poll()
+    return rc
 
 for scannedparam_currentval in scannedparam_vals:
     unused_staticparam = list(staticparam.keys())
@@ -172,15 +191,15 @@ for scannedparam_currentval in scannedparam_vals:
     ## Check if all user-given parameters were used
     if unused_staticparam:
         if len(unused_staticparam)>1:
-            print(CR+'rystiat error:'+CW+'the static parameters {:} were not found to be defined anywhere in the source file {:}'.format(
+            print(CR+'rystiat error:'+CW+' The static parameters {:} were not found to be defined anywhere in the source file {:}'.format(
                 unused_staticparam, rystiatrc['scriptname'])+C0)
         else:
-            print(CR+'rystiat error:'+CW+'the static parameter {:} was not found to be defined anywhere in the source file {:}'.format(
+            print(CR+'rystiat error:'+CW+' The static parameter {:} was not found to be defined anywhere in the source file {:}'.format(
                 unused_staticparam, rystiatrc['scriptname'])+C0)
         break
     if unused_scannedparam and scannedparam_currentval is not None:
-        print(CR+'rystiat error:'+CW+'the parameter to be scanned {:} was not found to be defined anywhere in the source file {:}'.format(
-            unused_scannedparam, rystiatrc['scriptname'])+C0)
+        print(CR+'rystiat error:'+CW+' The parameter to be scanned {:} was not found to be defined anywhere in the source file {:}'.format(
+            scannedparam_name, rystiatrc['scriptname'])+C0)
         break
 
     ## Run the simulation!
@@ -189,9 +208,11 @@ for scannedparam_currentval in scannedparam_vals:
     my_env = os.environ.copy()
     my_env['NEXTNANO'] = '/home/dominecf/bin/nextnano/2017_01_19/'
     print(CW+'rystiat info: it is {:}, running the next simulation with output:'.format(datetime.datetime.now())+C0)
-    callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
+    #callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
+            #cwd=os.path.split(newscriptname)[0], env=my_env)
+    callresult = run_command([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
             cwd=os.path.split(newscriptname)[0], env=my_env)
-    print(callresult.replace(b'\n',b'\n'))
+    if callresult != 0: print(CR+'rystiat warning: simulation ended with error code {:}'.format(callresult))
 
 newdirparam = ''
 newdirscan = ''
