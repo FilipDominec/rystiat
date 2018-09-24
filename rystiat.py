@@ -40,6 +40,25 @@ CP = '\033[95m'
 CW = '\033[97m'
 C0 = '\033[0m'
 
+def highlight(s, keyws):
+    for keyw in keyws:
+        s = s.replace(keyw, CR+keyw+C0)
+        s = s.replace(keyw.lower(), CR+keyw.lower()+C0)
+        s = s.replace(keyw.upper(), CR+keyw.upper()+C0)
+    return s
+def Popen_nice_print(command_list, enc, color, **params):
+    process = subprocess.Popen(command_list, **params, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    linenumber = 0
+    while True:
+        output = process.stdout.readline()
+        if output == b'' and process.poll() is not None:
+            break
+        if output:
+            print('{:}{:04}:{:} {:}'.format(color, linenumber, C0, highlight(output.decode(enc).strip(), ('Error', 'Warning', 'Failed'))))
+        linenumber += 1
+    if process.returncode:          # or process.poll()?
+        print(CR+'rystiat warning:'+C0+' External command ended with return code {:}, check the printout or the log file'.format(process.returncode))
+    return process.returncode
 
 
 ## Load the settings
@@ -60,13 +79,6 @@ def search_file_in_updirs(filename):
             cwd = os.path.split(cwd)[0]
     print('rystiat error: could not find the file `{:}` in the directory `{:}` nor its up-dirs'.format(filename, os.getcwd()))
 rystiatrc = search_file_in_updirs('rystiat.rc')
-
-## Preprocessing command
-
-if rystiatrc['preprocess'].strip():
-    print(CW+'rystiat info: calling the preprocessing command now...'+C0)
-    callresult = subprocess.check_output([rystiatrc['preprocess']])
-    print(callresult.replace(b'\\n',b'\n'))
 
 ## Automatic numbering of simulation runs
 def read_and_increment_counter(counterfile='./rystiat-counter'):
@@ -125,6 +137,16 @@ shutil.copy(rystiatrc['scriptname'],
 ## Enable running a single simulation (without parametric scan)
 if not scannedparam_vals: scannedparam_vals = [None]
 
+
+## Preprocessing command
+my_env = os.environ.copy()
+
+import re
+if rystiatrc['preprocess'].strip():
+    for cmd in re.split('[ a-zA-Z0-9]\;', rystiatrc['preprocess']): 
+        print(CG+'rystiat info: calling the preprocessing command now...'+cmd+C0)
+        Popen_nice_print(cmd.split(), 'utf-8', CG, cwd=batchdir, env=my_env)
+
 ## Main loop - for each scanned parameter generate a new script with updated parameters 
 try:
     enc = 'utf-8'
@@ -135,25 +157,6 @@ except UnicodeDecodeError:      # one can never 100% determine encoding, but thi
     with open(rystiatrc['scriptname'], 'r', encoding=enc) as inputfile: 
         inputlines = inputfile.readlines()
 
-def highlight(s, keyws):
-    for keyw in keyws:
-        s = s.replace(keyw, CR+keyw+C0)
-        s = s.replace(keyw.lower(), CR+keyw.lower()+C0)
-        s = s.replace(keyw.upper(), CR+keyw.upper()+C0)
-    return s
-def run_command(command_list, **params):
-    process = subprocess.Popen(command_list, **params, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    linenumber = 0
-    while True:
-        output = process.stdout.readline()
-        if output == b'' and process.poll() is not None:
-            break
-        if output:
-            print('{:}{:04}:{:} {:}'.format(CB, linenumber, C0, highlight(output.decode(enc).strip(), ('Error', 'Warning', 'Failed'))))
-        linenumber += 1
-    if process.returncode:          # or process.poll()?
-        print(CR+'rystiat warning:'+C0+' Simulation ended with return code {:}, check the printout or the log file'.format(process.returncode))
-    return process.returncode
 
 for scannedparam_currentval in scannedparam_vals:
     unused_staticparam = list(staticparam.keys())
@@ -206,22 +209,20 @@ for scannedparam_currentval in scannedparam_vals:
     ## Run the simulation!
 
     #from datetime import datetime;  ''.format(datetime.datetime())
-    my_env = os.environ.copy()
-    my_env['NEXTNANO'] = '/home/dominecf/bin/nextnano/2017_01_19/'
-    print(CG+'rystiat info: it is {:}, running the next simulation: {:}'.format(datetime.datetime.now(), CP+os.path.split(newscriptname)[1])+C0)
+    #my_env['NEXTNANO'] = '/home/dominecf/bin/nextnano/2017_01_19/'
+    print(CB+'rystiat info: it is {:}, running the next simulation: {:}'.format(datetime.datetime.now(), CP+os.path.split(newscriptname)[1])+C0)
     #callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
             #cwd=os.path.split(newscriptname)[0], env=my_env)
-    run_command([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
+    Popen_nice_print([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']], enc, CB,
             cwd=os.path.split(newscriptname)[0], env=my_env)
 
 newdirparam = ''
 newdirscan = ''
 
-if rystiatrc['postprocess'].strip(): 
-    print(CW+'rystiat info: calling the postprocessing command now...'+C0)
-    callresult = subprocess.check_output([rystiatrc['postprocess']])
-    print(callresult.replace(b'\\n',b'\n'))
-
+if rystiatrc['postprocess'].strip():
+    for cmd in rystiatrc['postprocess'].split(';'): 
+        print(CG+'rystiat info: calling the postprocessing command now...'+C0)
+        Popen_nice_print(cmd.split(), 'utf-8', CG, cwd=batchdir, env=my_env)
 
 """
 programmer's notes 
