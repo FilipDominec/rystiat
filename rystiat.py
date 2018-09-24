@@ -47,7 +47,7 @@ def highlight(s, keyws):
         s = s.replace(keyw.upper(), CR+keyw.upper()+C0)
     return s
 def Popen_nice_print(command_list, enc, color, **params):
-    process = subprocess.Popen(command_list, **params, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(command_list, **params, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # , shell=True
     linenumber = 0
     while True:
         output = process.stdout.readline()
@@ -213,7 +213,7 @@ for scannedparam_currentval in scannedparam_vals:
     print(CB+'rystiat info: it is {:}, running the next simulation: {:}'.format(datetime.datetime.now(), CP+os.path.split(newscriptname)[1])+C0)
     #callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
             #cwd=os.path.split(newscriptname)[0], env=my_env)
-    Popen_nice_print([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']], enc, CB,
+    Popen_nice_print([rystiatrc['interpreter'], rystiatrc['interprparam'], newscriptname, rystiatrc['staticparams']], enc, CB,
             cwd=os.path.split(newscriptname)[0], env=my_env)
 
 newdirparam = ''
