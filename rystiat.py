@@ -71,9 +71,16 @@ def search_file_in_updirs(filename):
             with open(checkfile) as openfile:
                 print(CW+'rystiat: run control file found: ', C0, checkfile)
                 for rl in openfile.readlines():
-                    if rl.strip() and rl.strip()[0] != '#': 
-                        key, val = [s.strip() for s in rl.split('=', 1)]
-                        if key: parsedlines[key] = val
+                    if rl.strip() and rl[0] != '#':
+                        if rl[0] not in (' ', '\t'):   ## whitespace on line beginning = extend multiline 
+                            key, val = [s.strip() for s in rl.split('=', 1)]
+                            parsedlines[key] = val
+                        else:  ## will turn the output to a list, and append to the existing value
+                            val = rl.strip()
+                            try:
+                                parsedlines[key].append(val)
+                            except:
+                                parsedlines[key] = [parsedlines[key], val]
                 return parsedlines
         except FileNotFoundError:
             cwd = os.path.split(cwd)[0]
@@ -141,11 +148,23 @@ if not scannedparam_vals: scannedparam_vals = [None]
 ## Preprocessing command
 my_env = os.environ.copy()
 
+def flatten(x): # in risk of passing a non-list, enclose it in brackets!
+    """ Flattens a nested list, or a tuple. 
+    Makes a list containing a string from a nonempty string, c.f. what list() normally does! 
+    The some for other (non-compound) data types. Skips empty strings.
+    """
+    result = []
+    for el in x:
+        if type(el) in (list,tuple):
+            result.extend(flatten(el))
+        elif el!='':
+            result.append(el)
+    return result
+
 import re
-if rystiatrc['preprocess'].strip():
-    for cmd in re.split('[ a-zA-Z0-9]\;', rystiatrc['preprocess']): 
-        print(CG+'rystiat info: calling the preprocessing command now...'+cmd+C0)
-        Popen_nice_print(cmd.split(), 'utf-8', CG, cwd=batchdir, env=my_env)
+for cmd in flatten([rystiatrc['preprocess']]): 
+    print(CG+'rystiat info: calling the preprocessing command now...'+cmd+C0)
+    Popen_nice_print(cmd.split(), 'utf-8', CG, cwd=batchdir, env=my_env)
 
 ## Main loop - for each scanned parameter generate a new script with updated parameters 
 try:
@@ -164,13 +183,11 @@ for scannedparam_currentval in scannedparam_vals:
 
     ## Generate a descriptive name for the script to be written
     if scannedparam_currentval:
-        try:
-            newscriptname = os.path.join(batchdir, '{:}__{:}={:.6g}{:}'.format(
-                    rystiatrc['scriptname'].replace(rystiatrc['scriptext'],''), 
-                    scannedparam_name, scannedparam_currentval, rystiatrc['scriptext'])) ## FIXME
+        barename, ext = rystiatrc['scriptname'].rsplit('.')
+        try:        ## FIXMe
+            newscriptname = os.path.join(batchdir, '{:}__{:}={:.6g}{:}'.format(barename, scannedparam_name, scannedparam_currentval, ext))
         except:
-            newscriptname = os.path.join(batchdir, '{:}__{:}={:}'.format(
-                    rystiatrc['scriptname'], scannedparam_name, scannedparam_currentval)) ## FIXME
+            newscriptname = os.path.join(batchdir, '{:}__{:}={:}{:}'.format(barename, scannedparam_name, scannedparam_currentval, ext))
     else: newscriptname = os.path.join(batchdir, rystiatrc['scriptname'])
 
     ## Parse and write the new updated script 
@@ -213,16 +230,15 @@ for scannedparam_currentval in scannedparam_vals:
     print(CB+'rystiat info: it is {:}, running the next simulation: {:}'.format(datetime.datetime.now(), CP+os.path.split(newscriptname)[1])+C0)
     #callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
             #cwd=os.path.split(newscriptname)[0], env=my_env)
-    Popen_nice_print([rystiatrc['interpreter'], rystiatrc['interprparam'], newscriptname, rystiatrc['staticparams']], enc, CB,
+    Popen_nice_print(flatten([rystiatrc['interpreter'], rystiatrc['interparam'], newscriptname, rystiatrc['staticparams']]), enc, CB,
             cwd=os.path.split(newscriptname)[0], env=my_env)
 
 newdirparam = ''
 newdirscan = ''
 
-if rystiatrc['postprocess'].strip():
-    for cmd in rystiatrc['postprocess'].split(';'): 
-        print(CG+'rystiat info: calling the postprocessing command now...'+C0)
-        Popen_nice_print(cmd.split(), 'utf-8', CG, cwd=batchdir, env=my_env)
+for cmd in flatten([rystiatrc['postprocess']]): 
+    print(CG+'rystiat info: calling the postprocessing command now...'+cmd+C0)
+    Popen_nice_print(cmd.split(), 'utf-8', CG, cwd=batchdir, env=my_env)
 
 """
 programmer's notes 

@@ -1,7 +1,17 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
-import os
+"""
+Nextnano stores the numeric data in *.dat file, and the corresponding descirptive 
+header in a *.plt file. This script recursively adds the header to the data file, so that
+it can be easily loaded by usual ascii processing programs. 
+
+Also, it flattens the recursive directory structure if called with --flatten parameter.
+"""
+
+
+import os, sys, shutil
+
 for root, dirs, files in os.walk(".", topdown=False):
     for name in files:
         fullname = os.path.join(root, name)
@@ -17,5 +27,9 @@ for root, dirs, files in os.walk(".", topdown=False):
                     header = '#' + '\t'.join([l.strip() for l in lines])
                 with open(fullname, 'r') as original: data = original.read()
                 with open(fullname, 'w') as modified: modified.write(header + '\n' + data)
-        except:
-            print('could not find', fullname)
+        except IOError:
+            pass
+
+        if fullname[-4:] == '.dat' and '--flatten' in sys.argv[1:]:
+            shutil.move(os.path.join(root, name), os.path.join('.', name))
+
