@@ -142,7 +142,7 @@ def highlight(s, keyws):
         s = s.replace(keyw.upper(), CR+keyw.upper()+C0)
     return s
 def run_command(command_list, **params):
-    process = subprocess.Popen(command_list, **params, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command_list, **params, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     linenumber = 0
     while True:
         output = process.stdout.readline()
@@ -151,8 +151,9 @@ def run_command(command_list, **params):
         if output:
             print('{:}{:04}:{:} {:}'.format(CB, linenumber, C0, highlight(output.decode(enc).strip(), ('Error', 'Warning', 'Failed'))))
         linenumber += 1
-    rc = process.poll()
-    return rc
+    if process.returncode:          # or process.poll()?
+        print(CR+'rystiat warning:'+C0+' Simulation ended with return code {:}, check the printout or the log file'.format(process.returncode))
+    return process.returncode
 
 for scannedparam_currentval in scannedparam_vals:
     unused_staticparam = list(staticparam.keys())
@@ -165,8 +166,6 @@ for scannedparam_currentval in scannedparam_vals:
                     rystiatrc['scriptname'].replace(rystiatrc['scriptext'],''), 
                     scannedparam_name, scannedparam_currentval, rystiatrc['scriptext'])) ## FIXME
         except:
-            print(CW+'rystiat warning: could not format scanning parameter `{:}` value as a number, assuming it is a text parameter'.format(
-                    scannedparam_name)+C0)
             newscriptname = os.path.join(batchdir, '{:}__{:}={:}'.format(
                     rystiatrc['scriptname'], scannedparam_name, scannedparam_currentval)) ## FIXME
     else: newscriptname = os.path.join(batchdir, rystiatrc['scriptname'])
@@ -179,6 +178,8 @@ for scannedparam_currentval in scannedparam_vals:
                 try: 
                     l = '{:}={:.6g}\n'.format(scannedparam_name,scannedparam_currentval)
                 except:
+                    print(CW+'rystiat warning: could not parse the scanned parameter `{:}` value as a number, assuming it is a text parameter'.format(
+                            scannedparam_name)+C0)
                     print(CW+'warning: could not format parameter value as a number'+C0)
                     l = '{:}={:}\n'.format(scannedparam_name,scannedparam_currentval)
             for k,v in staticparam.items():
@@ -207,12 +208,11 @@ for scannedparam_currentval in scannedparam_vals:
     #from datetime import datetime;  ''.format(datetime.datetime())
     my_env = os.environ.copy()
     my_env['NEXTNANO'] = '/home/dominecf/bin/nextnano/2017_01_19/'
-    print(CW+'rystiat info: it is {:}, running the next simulation with output:'.format(datetime.datetime.now())+C0)
+    print(CG+'rystiat info: it is {:}, running the next simulation: {:}'.format(datetime.datetime.now(), CP+os.path.split(newscriptname)[1])+C0)
     #callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
             #cwd=os.path.split(newscriptname)[0], env=my_env)
-    callresult = run_command([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
+    run_command([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
             cwd=os.path.split(newscriptname)[0], env=my_env)
-    if callresult != 0: print(CR+'rystiat warning: simulation ended with error code {:}'.format(callresult))
 
 newdirparam = ''
 newdirscan = ''
