@@ -124,8 +124,8 @@ for arg in sys.argv[1:]:
             scannedparam_name, scannedparam_vals = argname, argval
         else:
             print(CW+'rystiat warning: Already set up a 1-D scan over the `{:}{:}` parameter, cannot run a 2-D scan also over `{:}`'.format(
-                rystiatrc['variableprefix'], scannedparam_name, argname)+C0)
-            print(CW+'               I will thus set {:}{:}={:.6} as a static parameter.'.format(rystiatrc['variableprefix'], argname, argval[0])+C0)
+                rystiatrc['varprefix'], scannedparam_name, argname)+C0)
+            print(CW+'               I will thus set {:}{:}={:.6} as a static parameter.'.format(rystiatrc['varprefix'], argname, argval[0])+C0)
             staticparam[argname] = argval[0]
     else:
         staticparam[argname] = argval[0]
@@ -140,6 +140,7 @@ batchdir = os.path.join(os.getcwd(), simulationid)
 
 ## Backup the original script and also the calling command in the root directory of the whole batch
 os.makedirs(batchdir, exist_ok=True)
+with open('rystiat_last_batch_dir.txt', 'w') as outputfile: outputfile.write(batchdir+'\n')
 with open(os.path.join(batchdir, 'rystiat_command_line.txt'), 'w') as outputfile: outputfile.write(' '.join(sys.argv)+'\n')
 shutil.copy(rystiatrc['scriptname'], 
         os.path.join(batchdir, os.path.split(rystiatrc['scriptname'])[1]+'__original_bkup'))
@@ -198,16 +199,16 @@ for scannedparam_currentval in scannedparam_vals:
             if scannedparam_name and scannedparam_name+'=' in l.replace(' ', ''):  
                 unused_scannedparam = False
                 try: 
-                    l = '{:}{:}={:.6g}\n'.format(rystiatrc['variableprefix'], scannedparam_name, scannedparam_currentval)
+                    l = '{:}{:}={:.6g}\n'.format(rystiatrc['varprefix'], scannedparam_name, scannedparam_currentval)
                 except:
                     print(CW+'rystiat warning: could not parse the scanned parameter `{:}{:}` value as a number, assuming it is a text parameter'.format(
-                            rystiatrc['variableprefix'], scannedparam_name)+C0)
+                            rystiatrc['varprefix'], scannedparam_name)+C0)
                     print(CW+'warning: could not format parameter value as a number'+C0)
-                    l = '{:}{:}={:}\n'.format(rystiatrc['variableprefix'], scannedparam_name, scannedparam_currentval)
+                    l = '{:}{:}={:}\n'.format(rystiatrc['varprefix'], scannedparam_name, scannedparam_currentval)
             for k,v in staticparam.items():
                 if k+'=' in l.replace(' ', ''): 
                     unused_staticparam.remove(k)
-                    l = '{:}{:}={:}\n'.format(rystiatrc['variableprefix'], k, v)
+                    l = '{:}{:}={:}\n'.format(rystiatrc['varprefix'], k, v)
                     break
             outputfile.write(l)
 
@@ -215,14 +216,14 @@ for scannedparam_currentval in scannedparam_vals:
     if unused_staticparam:
         if len(unused_staticparam)>1:
             print(CR+'rystiat error:'+CW+' The static parameters {:}{:} were not found to be defined anywhere in the source file {:}'.format(
-                rystiatrc['variableprefix'], unused_staticparam, rystiatrc['scriptname'])+C0)
+                rystiatrc['varprefix'], unused_staticparam, rystiatrc['scriptname'])+C0)
         else:
             print(CR+'rystiat error:'+CW+' The static parameter {:}{:} was not found to be defined anywhere in the source file {:}'.format(
-                rystiatrc['variableprefix'], unused_staticparam, rystiatrc['scriptname'])+C0)
+                rystiatrc['varprefix'], unused_staticparam, rystiatrc['scriptname'])+C0)
         break
     if unused_scannedparam and scannedparam_currentval is not None:
         print(CR+'rystiat error:'+CW+' The parameter to be scanned {:}{:} was not found to be defined anywhere in the source file {:}'.format(
-            rystiatrc['variableprefix'], scannedparam_name, rystiatrc['scriptname'])+C0)
+            rystiatrc['varprefix'], scannedparam_name, rystiatrc['scriptname'])+C0)
         break
 
     ## Run the simulation!
@@ -232,7 +233,7 @@ for scannedparam_currentval in scannedparam_vals:
     print(CB+'rystiat info: it is {:}, running the next simulation: {:}'.format(datetime.datetime.now(), CP+os.path.split(newscriptname)[1])+C0)
     #callresult = subprocess.check_output([rystiatrc['interpreter'], rystiatrc['separator'], newscriptname, rystiatrc['staticparams']],
             #cwd=os.path.split(newscriptname)[0], env=my_env)
-    Popen_nice_print(flatten([rystiatrc['interpreter'], rystiatrc['interparam'], newscriptname, rystiatrc['staticparams']]), enc, CB,
+    Popen_nice_print(flatten([rystiatrc['interpreter'], newscriptname, rystiatrc['staticparams']]), enc, CB,
             cwd=os.path.split(newscriptname)[0], env=my_env)
 
 newdirparam = ''

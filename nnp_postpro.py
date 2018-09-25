@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 #-*- coding: utf-8 -*-
 
 """
@@ -11,25 +11,30 @@ Also, it flattens the recursive directory structure if called with --flatten par
 
 
 import os, sys, shutil
+from pathlib import Path
 
-for root, dirs, files in os.walk(".", topdown=False):
-    for name in files:
-        fullname = os.path.join(root, name)
-        try:
-            if fullname[-4:] == '.dat':
-                with open(fullname[:-4]+'.plt') as f: 
-                    lines = f.readlines()
-                    lines[0:3] = []
-                    lines[0] = lines[0].replace(' ', '')
-                    lines[2:6] = []
-                    if len(lines) > 2:  ## the file is probably multicolumn -> use line labels instead of y-unit
-                        lines[1:2] = []
-                    header = '#' + '\t'.join([l.strip() for l in lines])
-                with open(fullname, 'r') as original: data = original.read()
-                with open(fullname, 'w') as modified: modified.write(header + '\n' + data)
-        except IOError:
-            pass
+print('nnp_postpro running recursively in directory', os.getcwd())
 
-        if fullname[-4:] == '.dat' and '--flatten' in sys.argv[1:]:
-            shutil.move(os.path.join(root, name), os.path.join('.', name))
+#pathlib.Path.glob() recursively searches for files.
+#allpy = pathlib.Path('~').expanduser().glob('*.py')  
+for fullpath in Path.cwd().rglob('*.dat'):
+    try:
+        with open(fullpath.with_suffix('.plt')) as f: 
+            lines = f.readlines()
+            lines[0:3] = []
+            lines[0] = lines[0].replace(' ', '')
+            lines[2:6] = []
+            if len(lines) > 2:  ## the file is probably multicolumn -> use line labels instead of y-unit
+                lines[1:2] = []
+            header = '#' + '\t'.join([l.strip() for l in lines])
+        Path.unlink(Path(fullpath.with_suffix('.plt')))
+        with open(fullpath, 'r') as original: data = original.read()
+        with open(fullpath, 'w') as modified: modified.write(header + '\n' + data)
+    except IOError:
+        pass
+
+for name in Path('output').glob('*'):
+    if name.is_dir():
+        toname = Path(*[part for part in Path(name).parts if 'output' not in str(part)]) # filter out 'output' from dir path
+        shutil.move(name, toname)
 
