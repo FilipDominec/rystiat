@@ -142,8 +142,7 @@ batchdir = os.path.join(os.getcwd(), simulationid)
 os.makedirs(batchdir, exist_ok=True)
 with open('rystiat_last_batch_dir.txt', 'w') as outputfile: outputfile.write(batchdir+'\n')
 with open(os.path.join(batchdir, 'rystiat_command_line.txt'), 'w') as outputfile: outputfile.write(' '.join(sys.argv)+'\n')
-shutil.copy(rystiatrc['scriptname'], 
-        os.path.join(batchdir, os.path.split(rystiatrc['scriptname'])[1]+'__original_bkup'))
+shutil.copy(rystiatrc['scriptname'], os.path.join(batchdir, os.path.split(rystiatrc['scriptname'])[1]+'__original_bkup'))
 
 ## Enable running a single simulation (without parametric scan)
 if not scannedparam_vals: scannedparam_vals = [None]
@@ -185,7 +184,7 @@ for scannedparam_currentval in scannedparam_vals:
     unused_scannedparam = True
 
     ## Generate a descriptive name for the script to be written
-    if scannedparam_currentval:
+    if scannedparam_currentval is not None:
         barename, ext = rystiatrc['scriptname'].rsplit('.')
         try:        ## FIXMe
             newscriptname = os.path.join(batchdir, '{:}__{:}={:.6g}.{:}'.format(barename, scannedparam_name, scannedparam_currentval, ext))
