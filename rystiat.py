@@ -133,7 +133,10 @@ for arg in sys.argv[1:]:
 ## Generate new directory and backup the original script there
 simulationid = '{:03d}-{:.40}'.format(counter, os.path.split(rystiatrc['scriptname'])[1])
 for k,v in staticparam.items(): 
-    simulationid += '__{:}={:.6g}'.format(k,v)
+    try:
+        simulationid += '__{:}={:.6g}'.format(k,v)
+    except ValueError:
+        simulationid += '__{:}={:}'.format(k,v)
 if scannedparam_name: 
     simulationid += '__{:}Scan'.format(scannedparam_name)
 batchdir = os.path.join(os.getcwd(), simulationid)
@@ -188,7 +191,7 @@ for scannedparam_currentval in scannedparam_vals:
         barename, ext = rystiatrc['scriptname'].rsplit('.')
         try:        ## FIXMe
             newscriptname = os.path.join(batchdir, '{:}__{:}={:.6g}.{:}'.format(barename, scannedparam_name, scannedparam_currentval, ext))
-        except:
+        except ValueError:
             newscriptname = os.path.join(batchdir, '{:}__{:}={:}.{:}'.format(barename, scannedparam_name, scannedparam_currentval, ext))
     else: newscriptname = os.path.join(batchdir, rystiatrc['scriptname'])
 
