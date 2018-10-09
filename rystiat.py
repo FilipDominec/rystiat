@@ -198,7 +198,7 @@ for scannedparam_currentval in scannedparam_vals:
     ## Parse and write the new updated script 
     with open(newscriptname, 'w') as outputfile:
         for l in inputlines:
-            if scannedparam_name and scannedparam_name+'=' in l.replace(' ', ''):  
+            if scannedparam_name and scannedparam_name+'=' in l.replace(' ', ''):  ## FIXME trouble with 'GaN' matching 'InGaN' etc., use RE?
                 unused_scannedparam = False
                 try: 
                     l = '{:}{:}={:.6g}\n'.format(rystiatrc['varprefix'], scannedparam_name, scannedparam_currentval)
